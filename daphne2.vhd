@@ -296,6 +296,9 @@ architecture DAPHNE2_arch of DAPHNE2 is
         st_enable: in std_logic_vector(39 downto 0); -- enable/disable channels for self-triggered sender only
         outmode: in std_logic_vector(7 downto 0); -- choose streaming or self-trig sender for each output
         threshold: in std_logic_vector(13 downto 0); -- for self-trig senders, threshold relative to average baseline
+	-- 
+	-- ti_trigger: in std_logic_vector(13 downto 0);
+	--
 
         oeiclk: in std_logic; -- interface used to read output spy buffer and to r/w input mux control regs
         trig: in std_logic;
@@ -383,6 +386,8 @@ architecture DAPHNE2_arch of DAPHNE2 is
 
     signal threshold_reg : std_logic_vector(13 downto 0);
     signal threshold_we: std_logic;
+    --
+    -- ti_trigger_reg: std_logic_vector(13 downto 0);
 
     signal st_enable_reg: std_logic_vector(39 downto 0);
     signal st_enable_we: std_logic;
@@ -940,6 +945,8 @@ begin
 
         outmode => outmode_reg,
         threshold => threshold_reg,
+	--
+	-- ti_trigger => ti_tirgger_reg,
 
         slot_id => daq_out_param_reg(25 downto 22),  -- 4 bits
         crate_id => daq_out_param_reg(21 downto 12), -- 10 bits
