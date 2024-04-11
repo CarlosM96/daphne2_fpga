@@ -54,7 +54,10 @@ port(
     sclk200: out std_logic; -- system clock 200MHz
     sclk100: out std_logic; -- system clock 100MHz
 
-    timestamp: out std_logic_vector(63 downto 0) -- sync to mclk
+    timestamp: out std_logic_vector(63 downto 0); -- sync to mclk
+
+    sync: out std_logic_vector(7 downto 0);
+    sync_stb: out std_logic
 
   );
 end endpoint;
@@ -74,7 +77,9 @@ component pdts_endpoint_wrapper is -- wrapped and cleaned up for DAPHNE V2a desi
 		clk: out std_logic; -- Base clock output is 62.5MHz
 		rst: out std_logic; -- Base clock reset (clk domain)
 		ready: out std_logic; -- Endpoint ready flag (clk domain)
-		tstamp: out std_logic_vector(63 downto 0) -- Timestamp (clk domain)
+		tstamp: out std_logic_vector(63 downto 0); -- Timestamp (clk domain)
+        sync: out std_logic_vector(7 downto 0);
+        sync_stb: out std_logic
 	);
 end component;
 
@@ -94,6 +99,9 @@ signal mmcm1_clkout0, mmcm1_clkout1, mmcm1_clkout2: std_logic;
 signal mclk_i: std_logic;
 
 signal real_timestamp, fake_timestamp, timestamp_reg: std_logic_vector(63 downto 0);
+
+signal sync_reg: std_logic_vector(7 downto 0);
+signal sync_stb_reg: std_logic;
 
 begin
 
@@ -195,7 +203,9 @@ pdts_endpoint_inst: pdts_endpoint_wrapper
 		clk => ep_clk62p5, -- output clock from endpoint 62.5MHz
 		rst => open, -- endpoint reset output not used here
 		ready => ep_ts_rdy,
-		tstamp => real_timestamp
+		tstamp => real_timestamp,
+        sync => sync,
+        sync_stb => sync_stb
 	);
 
 -- LVDS driver for timing SFP return channel

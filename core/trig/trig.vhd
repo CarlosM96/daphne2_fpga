@@ -21,7 +21,9 @@ port(
     threshold: in std_logic_vector(13 downto 0); -- trigger threshold relative to baseline
     baseline: in std_logic_vector(13 downto 0); -- average signal level computed over past 256 samples
     triggered: out std_logic;
-    trigsample: out std_logic_vector(13 downto 0) -- the sample that caused the trigger
+    trigsample: out std_logic_vector(13 downto 0); -- the sample that caused the trigger
+    ti_trigger: in std_logic_vector(7 downto 0);
+    ti_trigger_stbr: in std_logic
 );
 end trig;
 
@@ -51,8 +53,9 @@ begin
     -- our super basic trigger condition is this: one sample ABOVE trig_thresh followed by two samples
     -- BELOW trig_thresh.
 
-    triggered_i <= '1' when ( din2>trig_thresh and din1<trig_thresh and din0<trig_thresh ) else '0';
-
+    -- triggered_i <= '1' when ( din2>trig_thresh and din1<trig_thresh and din0<trig_thresh ) else '0';
+    triggered_i <= '1' when (ti_trigger=x"07" and ti_trigger_stbr='1') else '0';
+ 
     -- add in some fake/synthetic latency, adjust it so total trigger latency is 64 clocks
 
     srlc32e_0_inst : srlc32e

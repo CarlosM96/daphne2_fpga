@@ -152,7 +152,9 @@ architecture DAPHNE2_arch of DAPHNE2 is
         fclk: out std_logic;  -- fast clock for frontend
         sclk200: out std_logic; -- system clock 200MHz
         sclk100: out std_logic; -- system clock 100MHz
-        timestamp: out std_logic_vector(63 downto 0) -- sync to mclk
+        timestamp: out std_logic_vector(63 downto 0); -- sync to mclk
+        sync: out std_logic_vector(7 downto 0); ---- WARNING
+        sync_stb: out std_logic -- WARNING
     );
     end component;
 
@@ -297,7 +299,8 @@ architecture DAPHNE2_arch of DAPHNE2 is
         outmode: in std_logic_vector(7 downto 0); -- choose streaming or self-trig sender for each output
         threshold: in std_logic_vector(13 downto 0); -- for self-trig senders, threshold relative to average baseline
 	-- 
-	-- ti_trigger: in std_logic_vector(13 downto 0);
+	    ti_trigger: in std_logic_vector(7 downto 0); -- WARNING
+        ti_trigger_stbr: in std_logic; -- WARNING
 	--
 
         oeiclk: in std_logic; -- interface used to read output spy buffer and to r/w input mux control regs
@@ -387,7 +390,12 @@ architecture DAPHNE2_arch of DAPHNE2 is
     signal threshold_reg : std_logic_vector(13 downto 0);
     signal threshold_we: std_logic;
     --
-    -- ti_trigger_reg: std_logic_vector(13 downto 0);
+    signal ti_trigger_reg: std_logic_vector(7 downto 0); ------------------
+    signal ti_trigger_stbr_reg: std_logic;  ---------------------------
+    signal ti_trigger_en: std_logic;
+    signal ti_trigger_en0: std_logic;
+    signal ti_trigger_en1: std_logic;
+    signal ti_trigger_en2: std_logic;
 
     signal st_enable_reg: std_logic_vector(39 downto 0);
     signal st_enable_we: std_logic;
@@ -475,13 +483,18 @@ begin
         sclk200 => sclk200,
         sclk100 => sclk100,
 
-        timestamp => timestamp
+        timestamp => timestamp,
+
+        sync => ti_trigger_reg, -- Sync command output (clk domain)
+        sync_stb => ti_trigger_stbr_reg -- Sync command strobe (clk domain)
     );
 
     -- the trigger pulse can come from the outside world (async) or from a write to a special address (oeiclk domain). 
     -- square this up and edge detect this and move it into the MCLK domain
 
     trig_gbe <= '1' when (std_match(rx_addr,TRIGGER_ADDR) and rx_wren='1') else '0';
+    ti_trigger_en <= '1' when (ti_trigger_reg=x"07" and ti_trigger_stbr_reg='1') else '0';
+
 
     trig_oei_proc: process(oeiclk)
     begin
@@ -489,13 +502,16 @@ begin
             trig_gbe0_reg <= trig_gbe;
             trig_gbe1_reg <= trig_gbe0_reg;
             trig_gbe2_reg <= trig_gbe1_reg;
+            ti_trigger_en0 <= ti_trigger_en;
+            ti_trigger_en1 <= ti_trigger_en0;
+            ti_trigger_en2 <= ti_trigger_en1;
         end if;
     end process trig_oei_proc;
 
     trig_proc: process(mclk) -- note external trigger input is inverted on DAPHNE2
     begin
         if rising_edge(mclk) then
-            trig_sync <= (not trig_ext) or trig_gbe0_reg or trig_gbe1_reg or trig_gbe2_reg; 
+            trig_sync <= (not trig_ext) or trig_gbe0_reg or trig_gbe1_reg or trig_gbe2_reg or ti_trigger_en0 or ti_trigger_en1 or ti_trigger_en2; --------------- WARNING-------------------
         end if;
     end process trig_proc;
 
@@ -899,6 +915,7 @@ begin
     -- register is 14 bits, R/W from GBE
 
     threshold_we <= '1' when (std_match(rx_addr,THRESHOLD_BASEADDR) and rx_wren='1') else '0';
+    
 
     thresh_proc: process(oeiclk)
     begin
@@ -946,7 +963,8 @@ begin
         outmode => outmode_reg,
         threshold => threshold_reg,
 	--
-	-- ti_trigger => ti_tirgger_reg,
+	    ti_trigger => ti_trigger_reg, --------------------
+        ti_trigger_stbr => ti_trigger_stbr_reg, -------------------
 
         slot_id => daq_out_param_reg(25 downto 22),  -- 4 bits
         crate_id => daq_out_param_reg(21 downto 12), -- 10 bits

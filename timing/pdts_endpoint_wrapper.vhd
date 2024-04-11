@@ -25,7 +25,9 @@ entity pdts_endpoint_wrapper is -- for DAPHNE V2a design
 		clk: out std_logic; -- Base clock output is 62.5MHz
 		rst: out std_logic; -- Base clock reset (clk domain)
 		ready: out std_logic; -- Endpoint ready flag (clk domain)
-		tstamp: out std_logic_vector(63 downto 0) -- Timestamp (clk domain)
+		tstamp: out std_logic_vector(63 downto 0); -- Timestamp (clk domain)
+		sync: out std_logic_vector(7 downto 0); 
+		sync_stb: out std_logic
 	);
 end pdts_endpoint_wrapper;
 
@@ -39,7 +41,7 @@ component pdts_endpoint is
 		FORCE_TX: boolean := false; -- Turn on transmit permanently
 		SKIP_FREQ: boolean := false; -- Skip the frequency check step (e.g. for simulation)
 		EXT_ADDR: boolean := true; -- Skip the address setting step
-		SKIP_DESKEW: boolean := false; -- Skip the phase adjustment step
+		SKIP_DESKEW: boolean := true; -- Skip the phase adjustment step
 		SKIP_TSTAMP: boolean := false -- Skip the timestamp initialisation step
 	);
 	port(
@@ -78,7 +80,7 @@ pdts_endpoint_inst: pdts_endpoint
 		FORCE_TX => false, -- Turn on transmit permanently, don't do this....!
 		SKIP_FREQ => false, -- Skip the frequency check step (e.g. for simulation)
 		EXT_ADDR => true, -- Skip the address setting step
-		SKIP_DESKEW => false, -- Skip the phase adjustment step
+		SKIP_DESKEW => true, -- Skip the phase adjustment step
 		SKIP_TSTAMP => false )
 	port map(
 		sys_clk => sys_clk, -- System clock
@@ -104,8 +106,8 @@ pdts_endpoint_inst: pdts_endpoint
 		pll_clki => '0', -- Externally produced clock
 		clk2x => open, -- 2x clock output
 		clk4x => open, -- 4x clock output
-		sync => open, -- Sync command output (clk domain)
-		sync_stb => open -- Sync command strobe (clk domain)
+		sync => sync, -- Sync command output (clk domain) ----- WARNING -----
+		sync_stb => sync_stb -- Sync command strobe (clk domain) ---- WARNING ---
 	);
 
 end pdts_endpoint_wrapper_arch;
